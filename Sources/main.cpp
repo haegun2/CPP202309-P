@@ -14,13 +14,17 @@ struct MenuItem {
 vector<MenuItem> menuItems;
 string user_who; // 사용자를 식별하는 변수
 
+void ManageUsers();
+bool UserExists(const string& userName);
+void AddUser();
+void LoadMenu(const string& user);
+
 void AddMenuItem();
 void SaveMenu(const string& user);
 void RecommendMenu();
 
 int main() {
-
-    //cin으로 유저 이름을 입력받고, 유저의 파일을 켜서 수정 할 예정
+    ManageUsers(); // 사용자 관리 함수 호출
 
     while (true) {
         cout << "\n----- 오늘 점심 뭐 먹지?? -----\n";
@@ -55,6 +59,88 @@ int main() {
     return 0;
 }
 
+void ManageUsers() {
+    ifstream UserListFile("user_list.csv");
+    if (!UserListFile.is_open()) {
+        cout << "사용자 목록 파일이 없습니다. 새 사용자를 추가하세요." << endl;
+        AddUser();
+    }
+    else {
+        string line;
+        cout << "사용자 목록:" << endl;
+        while (getline(UserListFile, line)) {
+            cout << line << endl;
+        }
+        user_who = ""; // 기본값 설정
+        UserListFile.close();
+
+        cout << "사용자를 입력하세요: ";
+        cin >> user_who;
+
+        if (!UserExists(user_who)) {
+            AddUser();
+        }
+        else {
+            LoadMenu(user_who);
+        }
+    }
+}
+
+bool UserExists(const string& user_name) {
+    ifstream UserListFile("user_list.csv");
+    if (UserListFile.is_open()) {
+        string line;
+        while (getline(UserListFile, line)) {
+            if (line == user_name) {
+                return true;
+            }
+        }
+        user_who = "";
+        UserListFile.close();
+    }
+    return false;
+}
+
+void AddUser() {
+    ofstream UserListFile("user_list.csv", ios::app); // 기존 목록에 덧붙이기 모드로 열기
+    if (!UserListFile.is_open()) {
+        cerr << "사용자 목록 파일을 열 수 없습니다." << endl;
+        return;
+    }
+
+    cout << "새 사용자 이름을 입력하세요: ";
+    cin >> user_who;
+
+    UserListFile << user_who << endl;
+    UserListFile.close();
+
+    // 새 사용자가 추가되면, 해당 사용자의 메뉴 파일 생성 (빈 파일)
+    ofstream userMenuFile(user_who + "_menu.csv");
+    if (!userMenuFile.is_open()) {
+        cerr << "메뉴 파일을 생성할 수 없습니다." << endl;
+        return;
+    }
+    userMenuFile.close();
+}
+
+void LoadMenu(const string& user) {
+    menuItems.clear(); // 기존 데이터를 모두 지웁니다.
+
+    ifstream file(user + "_menu.csv");
+    if (file.is_open()) {
+        string line;
+        while (getline(file, line)) {
+            size_t commaPos = line.find(",");
+            if (commaPos != string::npos) {
+                MenuItem item;
+                item.name = line.substr(0, commaPos);
+                item.rating = stoi(line.substr(commaPos + 1));
+                menuItems.push_back(item);
+            }
+        }
+        file.close();
+    }
+}
 
 
 void AddMenuItem() {
